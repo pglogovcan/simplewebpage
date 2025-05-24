@@ -1,0 +1,6 @@
+/* Add required field indicator */
+.required::after {
+  content: "*";
+  color: #f43f5e;
+  margin-left: 0.25rem;
+}
