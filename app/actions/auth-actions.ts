@@ -1,9 +1,7 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server"
-import { redirect } from "next/navigation"
+import { createClient } from "@/app/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { setOptions } from "leaflet"
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -12,15 +10,18 @@ export async function login(formData: FormData) {
   // in practice, you should validate your inputs
   const data = {
     email: formData.get("email") as string,
-    password: formData.get("password") as string,
-    options: {  
-      persistence: formData.get("rememberMe")
-    } 
+    password: formData.get("password") as string
   }
+  
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
     return { error: error.message }
+  }
+
+  // If remember me is checked, set a longer session duration
+  if (formData.get("rememberMe")) {
+    await supabase.auth.refreshSession()
   }
 
   revalidatePath("/", "layout")
@@ -89,5 +90,7 @@ export async function updatePassword(formData: FormData) {
 
 export async function signOut() {
   const supabase = await createClient()
-  await supabase.auth.signOut();
+  await supabase.auth.signOut()
+  revalidatePath("/", "layout")
+  return { success: true, redirect: "/" }
 }

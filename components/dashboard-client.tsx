@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import {
   Heart,
@@ -11,27 +10,23 @@ import {
   MessageSquare,
   Bell,
   TrendingUp,
-  MapPin,
   BarChart3,
   Plus,
-  Eye,
-  Bed,
-  Bath,
-  Maximize,
   ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { PropertyCard } from "@/components/property-card"
+import type { Property, SavedSearch, MarketTrends } from "@/types/dashboard"
 
 // Define types for our props
 interface DashboardClientProps {
-  initialProperties: any[]
-  initialSavedSearches: any[]
-  initialMarketTrends?: any
-  userEmail: string | undefined
-  
+  initialProperties: Property[]
+  initialSavedSearches: SavedSearch[]
+  initialMarketTrends: MarketTrends
+  userEmail: string
 }
 
 export default function DashboardClient({
@@ -40,16 +35,20 @@ export default function DashboardClient({
   initialSavedSearches,
   initialMarketTrends, 
 }: DashboardClientProps) {
-  // Now you can use useState and other hooks here
-  const [count, setCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false)
-  const [properties] = useState(initialProperties)
+  const [properties, setProperties] = useState(initialProperties)
   const [savedSearches] = useState(initialSavedSearches)
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-      price,
-    )
+  const handlePropertyUpdate = async () => {
+    // Refetch properties
+    try {
+      const response = await fetch('/api/properties')
+      if (!response.ok) throw new Error('Failed to fetch properties')
+      const updatedProperties = await response.json()
+      setProperties(updatedProperties)
+    } catch (error) {
+      console.error('Error refreshing properties:', error)
+    }
   }
 
   return (
@@ -97,44 +96,50 @@ export default function DashboardClient({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
           title="Spremljene nekretnine"
-          value="12"
+          value={properties.length.toString()} //change to saved properties
           icon={<Heart className="h-4 w-4 text-rose-400" />}
-          trend={
-            <>
-              <TrendingUp className="h-3 w-3 text-green-500" /> <span className="text-green-500">+2</span>
-            </>
-          }
-          trendText="u posljednjih 30 dana"
         />
         <StatCard
           title="Spremljene pretrage"
-          value="4"
+          value={savedSearches.length.toString()}
           icon={<Search className="h-4 w-4 text-rose-400" />}
-          trend={
-            <>
-              <TrendingUp className="h-3 w-3 text-green-500" /> <span className="text-green-500">+1</span>
-            </>
-          }
-          trendText="u posljednjih 30 dana"
         />
         <StatCard
           title="Nepročitane poruke"
           value="3"
           icon={<MessageSquare className="h-4 w-4 text-rose-400" />}
-          trendText="2 nove poruke danas"
+
         />
         <StatCard
           title="Aktivnost profila"
           value="78%"
           icon={<BarChart3 className="h-4 w-4 text-rose-400" />}
           progressValue={78}
+          
         />
       </div>
 
-      {/* Recent saved properties */}
+      {/* MOJE NEKRETNINE */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Nedavno spremljene nekretnine</h2>
+          <h2 className="text-lg font-semibold">Moje nekretnine</h2>
+          <Button variant="ghost" size="sm" className="text-rose-500 h-8 px-2" asChild>
+            <Link href="/dashboard/moje-nekretnine">
+              Vidi sve
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {properties.map((property) => (
+            <PropertyCard key={property.id} property={property} onUpdate={handlePropertyUpdate} editable={true} />
+          ))}
+        </div>
+      </div>
+      {/* SPREMLJENE NEKRETNINE */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Spremljene nekretnine</h2>
           <Button variant="ghost" size="sm" className="text-rose-500 h-8 px-2" asChild>
             <Link href="/dashboard/saved-properties">
               Vidi sve
@@ -143,8 +148,9 @@ export default function DashboardClient({
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* change to saved properties */}
           {properties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+            <PropertyCard key={property.id} property={property} onUpdate={handlePropertyUpdate} editable={false} />
           ))}
         </div>
       </div>
@@ -205,48 +211,40 @@ export default function DashboardClient({
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="text-sm font-medium">Prosječna cijena stanova</div>
-              <div className="text-2xl font-bold">2.350 €/m²</div>
+              <div className="text-2xl font-bold">{initialMarketTrends.apartmentPrice}</div>
               <div className="flex items-center text-xs text-green-500">
                 <TrendingUp className="mr-1 h-3 w-3" />
-                <span>+3.2% u odnosu na prošli mjesec</span>
+                <span>{initialMarketTrends.apartmentChange} u odnosu na prošli mjesec</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Bazirano na 1,245 nekretnina u Zagrebu</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Bazirano na {initialMarketTrends.apartmentSample} nekretnina u Zagrebu
+              </p>
             </div>
 
             <div className="space-y-2">
               <div className="text-sm font-medium">Prosječna cijena kuća</div>
-              <div className="text-2xl font-bold">1.850 €/m²</div>
+              <div className="text-2xl font-bold">{initialMarketTrends.housePrice}</div>
               <div className="flex items-center text-xs text-green-500">
                 <TrendingUp className="mr-1 h-3 w-3" />
-                <span>+1.8% u odnosu na prošli mjesec</span>
+                <span>{initialMarketTrends.houseChange} u odnosu na prošli mjesec</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Bazirano na 875 nekretnina u Hrvatskoj</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Bazirano na {initialMarketTrends.houseSample} nekretnina u Hrvatskoj
+              </p>
             </div>
 
             <div className="space-y-2">
               <div className="text-sm font-medium">Potražnja po lokacijama</div>
               <div className="space-y-2 mt-2">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Zagreb</span>
-                    <span>42%</span>
+                {initialMarketTrends.demandByLocation.map((item) => (
+                  <div key={item.location}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>{item.location}</span>
+                      <span>{item.percentage}%</span>
+                    </div>
+                    <Progress value={item.percentage} className="h-1.5" />
                   </div>
-                  <Progress value={42} className="h-1.5" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Split</span>
-                    <span>28%</span>
-                  </div>
-                  <Progress value={28} className="h-1.5" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Rijeka</span>
-                    <span>15%</span>
-                  </div>
-                  <Progress value={15} className="h-1.5" />
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -278,7 +276,7 @@ function StatCard({
   progressValue?: number
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden  h-20">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-3">
         <CardTitle className="text-xs font-medium">{title}</CardTitle>
         {icon}
@@ -302,76 +300,5 @@ function StatCard({
         )}
       </CardContent>
     </Card>
-  )
-}
-
-// Property Card Component
-function PropertyCard({ property }: { property: any }) {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-      price,
-    )
-  }
-
-  return (
-    <Link href={`/nekretnine/${property.id}`}>
-      <Card className="overflow-hidden group">
-        <div className="relative h-40 w-full">
-          <Image
-            src={property.image || "/placeholder.svg"}
-            alt={property.title}
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
-          />
-          <div className="absolute top-2 right-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm rounded-full">
-              <Heart className="h-4 w-4 text-rose-500" />
-            </Button>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 z-10">
-            <div className="text-white font-bold text-lg sm:text-xl">{formatPrice(property.price)}</div>
-          </div>
-        </div>
-        <CardContent className="p-3">
-          <div className="flex items-start gap-1 text-gray-500 text-xs sm:text-sm mb-2">
-            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 mt-0.5" />
-            <span>{property.location}</span>
-          </div>
-          <h3 className="font-semibold text-sm sm:text-lg mb-2 group-hover:text-rose-500 transition-colors line-clamp-2">
-            {property.title}
-          </h3>
-          <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600">
-            <div className="flex items-center gap-2 sm:gap-4">
-              {property.bedrooms > 0 && (
-                <div className="flex items-center gap-1">
-                  <Bed className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                  <span>{property.bedrooms}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1">
-                <Bath className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                <span>{property.bathrooms}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Maximize className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                <span>{property.area} m²</span>
-              </div>
-            </div>
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{property.type}</span>
-          </div>
-        </CardContent>
-        <CardFooter className="p-0">
-          <Link href={`/nekretnine/${property.id}`} className="w-full">
-            <Button
-              variant="ghost"
-              className="w-full rounded-none text-xs justify-center gap-1 text-rose-500 hover:bg-rose-50"
-            >
-              <Eye className="h-3 w-3" />
-              Pogledaj detalje
-            </Button>
-          </Link>
-        </CardFooter>
-      </Card>
-    </Link>
   )
 }

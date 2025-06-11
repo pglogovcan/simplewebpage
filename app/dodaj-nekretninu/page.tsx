@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from '@/app/context/AuthContext'
 import {
   MapPin,
   Euro,
@@ -140,6 +140,7 @@ const availableFeatures = [
 
 export default function AddPropertyPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [formData, setFormData] = useState<PropertyFormData>(initialFormData)
   const [currentStep, setCurrentStep] = useState(1)
   const [errors, setErrors] = useState<Partial<Record<keyof PropertyFormData, string>>>({})
@@ -161,6 +162,16 @@ export default function AddPropertyPage() {
 
   // Total number of steps in the form
   const totalSteps = 5
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/?auth=required&redirect=/dodaj-nekretninu')
+    }
+  }, [user, router])
+
+  if (!user) {
+    return null // Don't render anything while redirecting
+  }
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -357,21 +368,6 @@ export default function AddPropertyPage() {
     setIsSubmitting(true)
 
     try {
-      // Check if user is authenticated
-      const supabase = getSupabaseClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        setErrors((prev) => ({
-          ...prev,
-          submit: "Morate biti prijavljeni da biste dodali nekretninu.",
-        }))
-        setIsSubmitting(false)
-        return
-      }
-
       // Check usage limits before submitting
       const usageCheck = await usageService.checkUsageLimit(user.id, "property_listing")
 

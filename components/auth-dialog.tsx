@@ -99,24 +99,21 @@ export function AuthDialog() {
   if (loading) return null
 
   const handleLogout = async () => {
-
-    await signOut().then(() => {
+    const result = await signOut()
+    if (result.success) {
       toast({
         title: "Uspješno",
         description: "Uspješno ste se odjavili.",
         variant: "default",
       })
-    }
-    
-    ).catch((error) => {
+      router.push("/")
+    } else {
       toast({
         title: "Greška",
-        description: error.message,
+        description: "Došlo je do greške prilikom odjave.",
         variant: "destructive",
       })
     }
-   )
-   window.location.reload()
   }
   return (
     <>

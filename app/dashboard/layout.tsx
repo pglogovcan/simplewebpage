@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, Menu, LayoutDashboard, Heart, Search, MessageSquare, Settings } from "lucide-react"
+import { User, Menu, LayoutDashboard, Heart, Search, MessageSquare, Settings, House } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { SiteHeader } from "@/components/site-header" // Import the SiteHeader component
@@ -73,6 +73,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarLink href="/dashboard" icon={LayoutDashboard} isActive={pathname === "/dashboard"}>
                 Pregled
               </SidebarLink>
+              <SidebarLink href="/dashboard/moje-nekretnine" 
+                icon={House} 
+                isActive={pathname === "/dashboard/moje-nekretnine"}
+                >
+                Moje nekretnine
+              </SidebarLink>
               <SidebarLink
                 href="/dashboard/saved-properties"
                 icon={Heart}
@@ -86,13 +92,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isActive={pathname === "/dashboard/saved-searches"}
               >
                 Spremljene pretrage
-              </SidebarLink>
-              <SidebarLink
-                href="/dashboard/messages"
-                icon={MessageSquare}
-                isActive={pathname === "/dashboard/messages"}
-              >
-                Poruke
               </SidebarLink>
               <SidebarLink href="/dashboard/settings" icon={Settings} isActive={pathname === "/dashboard/settings"}>
                 Postavke

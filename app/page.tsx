@@ -2,6 +2,7 @@ import { FeaturedProperties } from "@/components/featured-properties"
 import { SearchForm } from "@/components/search-form"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
+import { AuthHandler } from "@/components/auth-handler"
 import { getFeaturedProperties } from "@/lib/data"
 
 export default async function Home() {
@@ -11,6 +12,7 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
+      <AuthHandler />
       <main className="flex-1">
         <section className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-purple-600 opacity-90" />

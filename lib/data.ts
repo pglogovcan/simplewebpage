@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/app/lib/supabase/server"
 
 // Function to get featured properties from the database
 export async function getFeaturedProperties(limit = 8) {
@@ -14,12 +14,12 @@ export async function getFeaturedProperties(limit = 8) {
 
     if (error) {
       console.error("Error fetching featured properties:", error)
-      return getMockFeaturedProperties() // Fallback to mock data if there's an error
+      return /* getMockFeaturedProperties() */ // Fallback to mock data if there's an error
     }
 
     if (!data || data.length === 0) {
       console.warn("No featured properties found, using mock data")
-      return getMockFeaturedProperties() // Fallback to mock data if no properties found
+      return /* getMockFeaturedProperties() */ // Fallback to mock data if no properties found
     }
 
     // Transform the data to match the expected format with proper null checks
@@ -42,12 +42,12 @@ export async function getFeaturedProperties(limit = 8) {
       }))
   } catch (error) {
     console.error("Unexpected error fetching featured properties:", error)
-    return getMockFeaturedProperties() // Fallback to mock data if there's an exception
+    return /* getMockFeaturedProperties() */ // Fallback to mock data if there's an exception
   }
 }
 
 // Mock data for featured properties as a fallback
-function getMockFeaturedProperties() {
+/* function getMockFeaturedProperties() {
   return [
     {
       id: "1",
@@ -120,7 +120,7 @@ function getMockFeaturedProperties() {
       dateAdded: new Date().toISOString(),
     },
   ]
-}
+} */
 
 export async function getPropertyById(id: string) {
   try {
@@ -214,30 +214,46 @@ export async function getPropertyById(id: string) {
   }
 }
 
-export async function getProperties() {
+export async function getProperties(userId?: string) {
   try {
     const supabase = await createClient()
 
-    // Query properties from Supabase
-    const { data: properties, error } = await supabase.from("properties").select("*").limit(10)
+    // Build the query
+    let query = supabase.from("properties").select("*")
+    
+    // If userId is provided, filter by user_id
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
+
+    // Execute the query with limit
+    const { data: properties, error } = await query.order('created_at', { ascending: false }).limit(50)
 
     if (error) {
       console.error("Error fetching properties:", error)
       throw new Error(`Failed to fetch properties: ${error.message}`)
     }
 
+    if (!properties || properties.length === 0) {
+      return []
+    }
+
     // Transform the properties to match the expected format
     return properties.map((property) => ({
       id: property.id,
       title: property.title,
+      description: property.description,
       price: property.price,
       location: property.location || property.city,
       image: property.image_url || `/placeholder.svg?height=400&width=600&text=${encodeURIComponent(property.title)}`,
+      images: property.images || [],
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       area: property.area,
       type: property.property_type,
-      dateAdded: property.date_added,
+      dateAdded: property.created_at,
+      updatedAt: property.updated_at,
+      userId: property.user_id
     }))
   } catch (error) {
     console.error("Error in getProperties:", error)

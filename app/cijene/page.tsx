@@ -11,7 +11,7 @@ import { Check, HelpCircle, Star, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { getSupabaseClient } from "@/utils/supabase/client"
+import { checkAuth } from "@/app/lib/auth"
 import { PLANS } from "@/lib/stripe"
 import type { BillingInterval, PlanType } from "@/lib/stripe"
 import {
@@ -26,21 +26,13 @@ import {
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<BillingInterval>("monthly")
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = getSupabaseClient()
-
-  const checkAuth = async () => {
-    const { data } = await supabase.auth.getSession()
-    return !!data.session
-  }
 
   const handleSubscribeClick = async (planType: PlanType) => {
     const isAuthenticated = await checkAuth()
 
     if (!isAuthenticated) {
-      setSelectedPlan(planType)
       setIsAuthDialogOpen(true)
       return
     }
@@ -268,8 +260,8 @@ export default function PricingPage() {
                     ))}
                   </div>
                   <p className="text-gray-600 mb-6">
-                    "Otkako koristim Pačonž, moji oglasi dobivaju puno više upita. Sučelje je jednostavno za korištenje,
-                    a podrška je uvijek spremna pomoći."
+                    &quot;Otkako koristim Pačonž, moji oglasi dobivaju puno više upita. Sučelje je jednostavno za korištenje,
+                    a podrška je uvijek spremna pomoći.&quot;
                   </p>
                   <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold mr-4">
@@ -292,8 +284,8 @@ export default function PricingPage() {
                     ))}
                   </div>
                   <p className="text-gray-600 mb-6">
-                    "Standard paket je savršen za našu malu agenciju. Dobivamo kvalitetne upite i prodali smo više
-                    nekretnina nego ikad prije."
+                    &quot;Standard paket je savršen za našu malu agenciju. Dobivamo kvalitetne upite i prodali smo više
+                    nekretnina nego ikad prije.&quot;
                   </p>
                   <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold mr-4">
@@ -316,8 +308,8 @@ export default function PricingPage() {
                     ))}
                   </div>
                   <p className="text-gray-600 mb-6">
-                    "Premium paket nam je omogućio da proširimo poslovanje. Analitika nam pomaže da bolje razumijemo
-                    tržište i optimiziramo oglase."
+                    &quot;Premium paket nam je omogućio da proširimo poslovanje. Analitika nam pomaže da bolje razumijemo
+                    tržište i optimiziramo oglase.&quot;
                   </p>
                   <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold mr-4">

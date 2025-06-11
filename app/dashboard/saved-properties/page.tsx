@@ -1,19 +1,19 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
-import Image from "next/image"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Bed, Bath, Maximize, MapPin, Heart, ChevronLeft, ChevronRight, Search, X, Trash2 } from "lucide-react"
+import { Heart, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "@/components/ui/use-toast"
+import { getMySavedProperties } from "@/app/actions/property-actions"
+import { PropertyCard } from "@/components/property-card"
 
-type Property = {
+export type Property = {
   id: string
   title: string
   price: number
@@ -27,112 +27,38 @@ type Property = {
 }
 
 export default function SavedPropertiesPage() {
-  const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({})
   const [searchQuery, setSearchQuery] = useState("")
   const [sortOption, setSortOption] = useState("newest")
+  const [properties, setProperties] = useState<Property[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data for saved properties
-  const savedProperties: Property[] = [
-    {
-      id: "1",
-      title: "Moderan stan u centru grada",
-      price: 185000,
-      location: "Zagreb, Donji grad",
-      bedrooms: 2,
-      bathrooms: 1,
-      area: 68,
-      type: "Stan",
-      images: [
-        "/placeholder.svg?height=400&width=600&text=Slika+1",
-        "/placeholder.svg?height=400&width=600&text=Slika+2",
-        "/placeholder.svg?height=400&width=600&text=Slika+3",
-      ],
-      dateAdded: "2025-03-10",
-    },
-    {
-      id: "2",
-      title: "Luksuzna vila s bazenom",
-      price: 750000,
-      location: "Split, Žnjan",
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 220,
-      type: "Vila",
-      images: [
-        "/placeholder.svg?height=400&width=600&text=Slika+1",
-        "/placeholder.svg?height=400&width=600&text=Slika+2",
-      ],
-      dateAdded: "2025-03-05",
-    },
-    {
-      id: "3",
-      title: "Novogradnja - stan s terasom",
-      price: 210000,
-      location: "Rijeka, Centar",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 85,
-      type: "Stan",
-      images: [
-        "/placeholder.svg?height=400&width=600&text=Slika+1",
-        "/placeholder.svg?height=400&width=600&text=Slika+2",
-        "/placeholder.svg?height=400&width=600&text=Slika+3",
-      ],
-      dateAdded: "2025-02-28",
-    },
-    {
-      id: "4",
-      title: "Kuća s vrtom blizu mora",
-      price: 320000,
-      location: "Zadar, Borik",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 120,
-      type: "Kuća",
-      images: [
-        "/placeholder.svg?height=400&width=600&text=Slika+1",
-        "/placeholder.svg?height=400&width=600&text=Slika+2",
-      ],
-      dateAdded: "2025-02-20",
-    },
-    {
-      id: "5",
-      title: "Penthouse s panoramskim pogledom",
-      price: 450000,
-      location: "Split, Bačvice",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 110,
-      type: "Penthouse",
-      images: [
-        "/placeholder.svg?height=400&width=600&text=Slika+1",
-        "/placeholder.svg?height=400&width=600&text=Slika+2",
-      ],
-      dateAdded: "2025-02-15",
-    },
-    {
-      id: "6",
-      title: "Apartman u turističkom naselju",
-      price: 120000,
-      location: "Poreč, Centar",
-      bedrooms: 1,
-      bathrooms: 1,
-      area: 45,
-      type: "Apartman",
-      images: [
-        "/placeholder.svg?height=400&width=600&text=Slika+1",
-        "/placeholder.svg?height=400&width=600&text=Slika+2",
-      ],
-      dateAdded: "2025-02-10",
-    },
-  ]
+  useEffect(() => {
+    fetchSavedProperties()
+  }, [])
+
+  const fetchSavedProperties = async () => {
+    try {
+      const data = await getMySavedProperties()
+      setProperties(data)
+      console.log(data)
+    } catch (error) {
+      console.error('Error fetching saved properties:', error)
+      toast({
+        title: "Greška",
+        description: "Došlo je do greške prilikom dohvaćanja spremljenih nekretnina.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Filter properties based on search query
-  const filteredProperties = savedProperties.filter(
+  const filteredProperties = properties.filter(
     (property) =>
-      property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.type.toLowerCase().includes(searchQuery.toLowerCase()),
+      (property.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (property.location?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (property.type?.toLowerCase() || '').includes(searchQuery.toLowerCase()),
   )
 
   // Sort properties based on selected option
@@ -155,33 +81,54 @@ export default function SavedPropertiesPage() {
     }
   })
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-      price,
+  const handleUnsave = async (propertyId: string) => {
+    try {
+      const response = await fetch(`/api/properties/${propertyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.status === 204) {
+        // Success - no content returned
+        toast({
+          title: "Nekretnina uklonjena",
+          description: "Nekretnina je uspješno uklonjena iz spremljenih.",
+        })
+        await fetchSavedProperties()
+      } else if (response.status === 404) {
+        toast({
+          title: "Greška",
+          description: "Nekretnina nije pronađena.",
+          variant: "destructive",
+        })
+      } else if (response.status === 401) {
+        toast({
+          title: "Greška",
+          description: "Niste autorizirani za ovu akciju.",
+          variant: "destructive",
+        })
+      } else {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to delete property')
+      }
+    } catch (error) {
+      console.error('Error unsaving property:', error)
+      toast({
+        title: "Greška",
+        description: "Došlo je do greške prilikom uklanjanja nekretnine iz spremljenih.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
     )
-  }
-
-  const nextImage = (propertyId: string, totalImages: number, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setActiveImageIndices((prev) => ({
-      ...prev,
-      [propertyId]: ((prev[propertyId] || 0) + 1) % totalImages,
-    }))
-  }
-
-  const prevImage = (propertyId: string, totalImages: number, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setActiveImageIndices((prev) => ({
-      ...prev,
-      [propertyId]: ((prev[propertyId] || 0) - 1 + totalImages) % totalImages,
-    }))
-  }
-
-  // Get the current active image index for a property, defaulting to 0
-  const getActiveImageIndex = (propertyId: string) => {
-    return activeImageIndices[propertyId] || 0
   }
 
   return (
@@ -265,91 +212,12 @@ export default function SavedPropertiesPage() {
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {sortedProperties.map((property) => (
-                    <div key={property.id} className="group relative">
-                      <Link href={`/nekretnine/${property.id}`} className="block">
-                        <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 h-full">
-                          <div className="relative h-48">
-                            {/* Image slider */}
-                            <div className="relative w-full h-full overflow-hidden">
-                              {property.images.map((image, index) => (
-                                <div
-                                  key={index}
-                                  className={cn(
-                                    "absolute inset-0 transition-opacity duration-300",
-                                    getActiveImageIndex(property.id) === index ? "opacity-100" : "opacity-0",
-                                  )}
-                                >
-                                  <Image
-                                    src={image || "/placeholder.svg"}
-                                    alt={`${property.title} - slika ${index + 1}`}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                              ))}
-
-                              {/* Navigation arrows */}
-                              <button
-                                onClick={(e) => prevImage(property.id, property.images.length, e)}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors z-10"
-                                aria-label="Prethodna slika"
-                              >
-                                <ChevronLeft className="h-4 w-4" />
-                              </button>
-
-                              <button
-                                onClick={(e) => nextImage(property.id, property.images.length, e)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors z-10"
-                                aria-label="Sljedeća slika"
-                              >
-                                <ChevronRight className="h-4 w-4" />
-                              </button>
-                            </div>
-
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 z-10">
-                              <div className="text-white font-bold text-xl">{formatPrice(property.price)}</div>
-                            </div>
-                          </div>
-
-                          <div className="p-4">
-                            <div className="flex items-start gap-1 text-gray-500 text-sm mb-2">
-                              <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                              <span>{property.location}</span>
-                            </div>
-                            <h3 className="font-semibold text-lg mb-2 group-hover:text-rose-500 transition-colors">
-                              {property.title}
-                            </h3>
-                            <div className="flex items-center justify-between text-sm text-gray-600">
-                              <div className="flex items-center gap-4">
-                                {property.bedrooms > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <Bed className="h-4 w-4 text-gray-400" />
-                                    <span>{property.bedrooms}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                  <Bath className="h-4 w-4 text-gray-400" />
-                                  <span>{property.bathrooms}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Maximize className="h-4 w-4 text-gray-400" />
-                                  <span>{property.area} m²</span>
-                                </div>
-                              </div>
-                              <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{property.type}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute top-2 right-2 bg-white/80 hover:bg-white text-rose-500 hover:text-rose-600 rounded-full z-20"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      onUpdate={fetchSavedProperties}
+                      editable={false}
+                    />
                   ))}
                 </div>
               )}
@@ -378,96 +246,12 @@ export default function SavedPropertiesPage() {
               ) : (
                 <div className="space-y-4">
                   {sortedProperties.map((property) => (
-                    <div key={property.id} className="group relative">
-                      <Link href={`/nekretnine/${property.id}`} className="block">
-                        <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-                          <div className="flex flex-col sm:flex-row">
-                            <div className="relative w-full sm:w-1/3 h-48">
-                              {/* Image slider */}
-                              <div className="relative w-full h-full overflow-hidden">
-                                {property.images.map((image, index) => (
-                                  <div
-                                    key={index}
-                                    className={cn(
-                                      "absolute inset-0 transition-opacity duration-300",
-                                      getActiveImageIndex(property.id) === index ? "opacity-100" : "opacity-0",
-                                    )}
-                                  >
-                                    <Image
-                                      src={image || "/placeholder.svg"}
-                                      alt={`${property.title} - slika ${index + 1}`}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                  </div>
-                                ))}
-
-                                {/* Navigation arrows */}
-                                <button
-                                  onClick={(e) => prevImage(property.id, property.images.length, e)}
-                                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors z-10"
-                                  aria-label="Prethodna slika"
-                                >
-                                  <ChevronLeft className="h-4 w-4" />
-                                </button>
-
-                                <button
-                                  onClick={(e) => nextImage(property.id, property.images.length, e)}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition-colors z-10"
-                                  aria-label="Sljedeća slika"
-                                >
-                                  <ChevronRight className="h-4 w-4" />
-                                </button>
-                              </div>
-
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 z-10">
-                                <div className="text-white font-bold text-xl">{formatPrice(property.price)}</div>
-                              </div>
-                            </div>
-
-                            <div className="p-4 sm:p-6 flex-1 flex flex-col">
-                              <div className="flex items-start gap-1 text-gray-500 text-sm mb-2">
-                                <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                                <span>{property.location}</span>
-                              </div>
-                              <h3 className="font-semibold text-lg mb-2 group-hover:text-rose-500 transition-colors">
-                                {property.title}
-                              </h3>
-
-                              <div className="flex items-center gap-4 mb-4">
-                                {property.bedrooms > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <Bed className="h-4 w-4 text-gray-400" />
-                                    <span>{property.bedrooms}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                  <Bath className="h-4 w-4 text-gray-400" />
-                                  <span>{property.bathrooms}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Maximize className="h-4 w-4 text-gray-400" />
-                                  <span>{property.area} m²</span>
-                                </div>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{property.type}</span>
-                              </div>
-
-                              <div className="mt-auto text-xs text-gray-500">
-                                Dodano: {new Date(property.dateAdded).toLocaleDateString("hr-HR")}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute top-2 right-2 bg-white/80 hover:bg-white text-rose-500 hover:text-rose-600 rounded-full z-20"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      onUpdate={fetchSavedProperties}
+                      editable={false}
+                    />
                   ))}
                 </div>
               )}

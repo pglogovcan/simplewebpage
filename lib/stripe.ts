@@ -5,8 +5,9 @@ export const PLANS = {
   BASIC: {
     name: "Osnovni",
     id: "basic",
-    priceMonthly: "price_1OxYz1ABCDEFghijklmno12", // Replace with your actual Stripe price IDs
-    priceYearly: "price_1OxYz2ABCDEFghijklmno34",
+    // Replace these with your actual Stripe price IDs from the Stripe Dashboard
+    priceMonthly: "price_1RWfMh2KElzom3YfbFUw9KPq", // Monthly price ID for Basic plan
+    priceYearly: "price_XXXXX",  // Yearly price ID for Basic plan
     features: [
       "Do 3 aktivna oglasa",
       "Osnovni prikaz oglasa",
@@ -20,8 +21,9 @@ export const PLANS = {
   STANDARD: {
     name: "Standard",
     id: "standard",
-    priceMonthly: "price_1OxYz3ABCDEFghijklmno56",
-    priceYearly: "price_1OxYz4ABCDEFghijklmno78",
+    // Replace these with your actual Stripe price IDs from the Stripe Dashboard
+    priceMonthly: "price_1RWfOx2KElzom3YfVvCrHzdE", // Monthly price ID for Standard plan
+    priceYearly: "price_XXXXX",  // Yearly price ID for Standard plan
     features: [
       "Do 20 aktivnih oglasa",
       "Istaknuti oglasi",
@@ -37,8 +39,9 @@ export const PLANS = {
   PREMIUM: {
     name: "Premium",
     id: "premium",
-    priceMonthly: "price_1OxYz5ABCDEFghijklmno90",
-    priceYearly: "price_1OxYz6ABCDEFghijklmnoAB",
+    // Replace these with your actual Stripe price IDs from the Stripe Dashboard
+    priceMonthly: "price_XXXXX", // Monthly price ID for Premium plan
+    priceYearly: "price_XXXXX",  // Yearly price ID for Premium plan
     features: [
       "Neograničen broj oglasa",
       "Premium pozicija oglasa",
@@ -84,7 +87,7 @@ export function getStripe(): Stripe | null {
 
   if (!stripeInstance && process.env.STRIPE_SECRET_KEY) {
     stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2023-10-16",
+      apiVersion: "2025-04-30.basil",
       typescript: true,
     })
   }

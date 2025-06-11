@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/app/lib/supabase/server"
 
 // Define the type for search parameters
 export type SearchParams = {

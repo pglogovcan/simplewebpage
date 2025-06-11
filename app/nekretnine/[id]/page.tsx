@@ -1,5 +1,5 @@
 import PropertyDetailsClient from "./property-details-client"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/app/lib/supabase/server"
 
 // Import mock data for fallback and neighborhood data
 import { mockProperties } from "@/lib/mock-data"
